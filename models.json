@@ -1,0 +1,7 @@
+{
+    "haiku": { "name": "claude-3-haiku-20240307", "pi": 0.25, "po": 1.25, "apikey": "<APIKEY>"  },
+    "sonnet": { "name": "claude-3-5-sonnet-latest", "pi" : 3.0, "po": 15.0, "apikey": "<APIKEY>" },
+    "gpt3.5": { "name": "GPT-3.5-Turbo-1106", "pi" : 1.0, "po": 2.0, "endpoint": "<ENDPOINT_OF_AZURE_AI_CHAT>", "apikey":"<APIKEY>" },
+    "gpt4omini": { "name": "gpt-4o-mini", "pi" : 0.15, "po": 0.6, "endpoint": ""<ENDPOINT_OF_AZURE_AI_CHAT>" , "apikey":"<APIKEY>"}
+}
+
