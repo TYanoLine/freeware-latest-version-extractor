@@ -64,7 +64,7 @@ def extract_version(model, software_name, text):
     output_tokens = 0
 
     model_name = model['name']
-    api_key = model['apikey'],
+    api_key = model['apikey']
     if not 'gpt' in model_name.lower():
         clude_client = anthropic.Anthropic(api_key=api_key)
         message = clude_client.messages.create(
@@ -83,12 +83,14 @@ def extract_version(model, software_name, text):
     else:
         endpoint = model['endpoint']
         azure_client = AzureOpenAI(
-            api_version="2023-05-15",
+            api_key= api_key,
+            api_version="2024-08-01-preview",
             azure_endpoint = endpoint
             )
 
         response = azure_client.chat.completions.create(
-            model=model['name'],
+            model=model_name,
+            max_tokens=1000,
             temperature=0.0,
             messages=[
                 {"role": "system", "content": system_text},
@@ -131,7 +133,11 @@ if __name__ == '__main__':
         model_name = 'gpt4omini'
         software_name = software_name.removeprefix("#")
         print (f'Scraping: {software_name}')
-        text = scraping(driver, target['url'])
+        url = target['url']
+        if not url:
+            print (" Skip(url is blank.)")
+            continue 
+        text = scraping(driver, url)
         texts.append((software_name, text, model_name))
 
     driver.close()
