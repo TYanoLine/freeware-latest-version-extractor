@@ -1,4 +1,5 @@
 import time
+import datetime 
 import json
 
 from selenium import webdriver
@@ -8,6 +9,7 @@ from bs4 import BeautifulSoup
 
 import anthropic
 from openai import AzureOpenAI
+from openai import RateLimitError
 
 doller_to_en = 152
 
@@ -18,6 +20,21 @@ with open('models.json') as f:
 
 input_tokens = 0
 output_tokens = 0
+
+def cached_filename(url: str):
+    url = url.removeprefix("http://").removeprefix("https://").replace("/", "-")
+    return f"cached/{datetime.datetime.now().strftime('%Y%m%d')}{url}.txt"
+    
+def cached(url):
+    try:
+        with open(cached_filename(url),'r', encoding='utf-8') as o:
+            return o.read()
+    except:
+        return None
+
+def save_as_cache(url, text):
+    with open(cached_filename(url),'w', encoding='utf-8') as o:
+        o.write(text)
 
 def scraping(driver, url):
     try:
@@ -88,16 +105,26 @@ def extract_version(model, software_name, text):
             azure_endpoint = endpoint
             )
 
-        response = azure_client.chat.completions.create(
-            model=model_name,
-            max_tokens=1000,
-            temperature=0.0,
-            messages=[
-                {"role": "system", "content": system_text},
-                {"role": "user", "content": text},
-                {"role": "assistant", "content": '{\n "version":'}
-            ]
-        )
+        retry_count = 1
+        wait_sec = 5.0
+        while True:
+            try:
+                response = azure_client.chat.completions.create(
+                    model=model_name,
+                    max_tokens=1000,
+                    temperature=0.0,
+                    messages=[
+                        {"role": "system", "content": system_text},
+                        {"role": "user", "content": text},
+                        {"role": "assistant", "content": '{\n "version":'}
+                    ]
+                )
+                break
+            except RateLimitError:
+                print("RateLimitError is occured. Retry..")
+                time.sleep(wait_sec * retry_count)
+                retry_count = retry_count + 1
+
         resMessage = (response.choices[0].message.content).replace('\n','')
         input_tokens = response.usage.prompt_tokens
         output_tokens = response.usage.completion_tokens
@@ -136,8 +163,12 @@ if __name__ == '__main__':
         url = target['url']
         if not url:
             print (" Skip(url is blank.)")
-            continue 
-        text = scraping(driver, url)
+            continue
+        text = cached(url)
+        if not text:
+            text = scraping(driver, url)
+            save_as_cache(url, text)
+
         texts.append((software_name, text, model_name))
 
     driver.close()
